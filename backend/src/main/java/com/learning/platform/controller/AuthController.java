@@ -51,6 +51,7 @@ public class AuthController {
                 userDetails.getAuthorities().iterator().next().getAuthority()));
     }
 
+    @SuppressWarnings("null")
     @PostMapping("/signup")
     public ResponseEntity<?> registerUser(@Valid @RequestBody SignupRequest signUpRequest) {
         if (userRepository.existsByEmail(signUpRequest.getEmail())) {
