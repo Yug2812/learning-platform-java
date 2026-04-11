@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Profile – MIT-WPU AI Counseling</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="container">
+    <header>
+        <div class="logo">🎓 MIT-WPU</div>
+        <h1>Student Profile</h1>
+        <p style="color:#7f8c8d;font-size:0.9rem;margin-top:6px;">Enter your academic details to begin</p>
+    </header>
+
+    <div class="form-group">
+        <label for="name">Full Name</label>
+        <input type="text" id="name" placeholder="e.g. Rahul Sharma" />
+    </div>
+    <div class="form-group">
+        <label for="class10">Class 10 Score (%)</label>
+        <input type="number" id="class10" placeholder="e.g. 85" min="0" max="100" />
+    </div>
+    <div class="form-group">
+        <label for="class12">Class 12 Score (%)</label>
+        <input type="number" id="class12" placeholder="e.g. 78" min="0" max="100" />
+    </div>
+    <div class="form-group">
+        <label for="stream">Stream</label>
+        <select id="stream">
+            <option value="">-- Select Stream --</option>
+            <option value="PCM">PCM</option>
+            <option value="PCB">PCB</option>
+            <option value="PCMB">PCMB</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="jeeScore">JEE Score (0 if not attempted)</label>
+        <input type="number" id="jeeScore" placeholder="e.g. 70" min="0" max="360" />
+    </div>
+    <div class="form-group">
+        <label for="cetScore">MHT-CET Score (0 if not attempted)</label>
+        <input type="number" id="cetScore" placeholder="e.g. 85" min="0" max="200" />
+    </div>
+
+    <button id="start-btn" onclick="startQuiz()">Start Quiz →</button>
+    <p class="error-msg" id="error-msg">Please fill all required fields.</p>
+</div>
+
+<script>
+    const API_BASE = 'http://localhost:8080';
+
+    // Redirect to login if no token
+    if (!localStorage.getItem('token')) {
+        window.location.href = 'login.html';
+    }
+
+    async function startQuiz() {
+        const name = document.getElementById('name').value.trim();
+        const class10 = document.getElementById('class10').value;
+        const class12 = document.getElementById('class12').value;
+        const stream = document.getElementById('stream').value;
+        const jeeScore = document.getElementById('jeeScore').value;
+        const cetScore = document.getElementById('cetScore').value;
+        const errorMsg = document.getElementById('error-msg');
+        const btn = document.getElementById('start-btn');
+
+        if (!name || !class10 || !class12 || !stream) {
+            errorMsg.textContent = 'Please fill in all required fields.';
+            errorMsg.style.display = 'block';
+            return;
+        }
+
+        const studentProfile = {
+            name,
+            class10Score: parseFloat(class10),
+            class12Score: parseFloat(class12),
+            stream,
+            jeeScore: parseFloat(jeeScore) || 0,
+            cetScore: parseFloat(cetScore) || 0
+        };
+
+        localStorage.setItem('studentProfile', JSON.stringify(studentProfile));
+
+        btn.disabled = true;
+        btn.textContent = 'Starting...';
+        errorMsg.style.display = 'none';
+
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_BASE}/api/quiz/start`, {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!res.ok) throw new Error('Failed to start quiz');
+
+            const data = await res.json();
+            localStorage.setItem('currentQuestion', JSON.stringify(data));
+            localStorage.setItem('attemptId', data.attemptId);
+            window.location.href = 'quiz.html';
+        } catch (err) {
+            errorMsg.textContent = 'Failed to connect to backend. Ensure the server is running.';
+            errorMsg.style.display = 'block';
+            btn.disabled = false;
+            btn.textContent = 'Start Quiz →';
+        }
+    }
+</script>
+</body>
+</html>

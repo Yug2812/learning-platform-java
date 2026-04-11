@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -19,6 +20,8 @@ public class QuizService {
     private final QuestionRepository questionRepository;
     private final QuizAttemptRepository quizAttemptRepository;
     private final UserRepository userRepository;
+    private final PredictionService predictionService;
+    private final EligibilityService eligibilityService;
 
     private static final int MAX_QUESTIONS = 10;
 
@@ -81,8 +84,8 @@ public class QuizService {
     }
 
     @Transactional
-    public QuizDto.SubmitResponse submitQuiz(Long attemptId, String userEmail) {
-        QuizAttempt attempt = quizAttemptRepository.findById(attemptId)
+    public QuizDto.SubmitResponse submitQuiz(QuizDto.SubmitRequest request, String userEmail) {
+        QuizAttempt attempt = quizAttemptRepository.findById(request.getAttemptId())
                 .orElseThrow(() -> new RuntimeException("Quiz attempt not found"));
 
         if (!attempt.getUser().getEmail().equals(userEmail)) {
@@ -92,8 +95,22 @@ public class QuizService {
         attempt.setCompleted(true);
         quizAttemptRepository.save(attempt);
 
-        // Simple Recommendation Logic (Can be refined later or by AI)
-        String recommendation = determineBaseRecommendation(attempt);
+        // Fetch AI Prediction
+        String prediction = predictionService.predictField(
+                attempt.getMathScore(),
+                attempt.getPhysicsScore(),
+                attempt.getLogicScore(),
+                attempt.getInterestScore()
+        );
+
+        Map<String, String> branchAnalysis = null;
+        List<Course> recommendedCourses = null;
+
+        if (request.getStudentProfile() != null) {
+            branchAnalysis = eligibilityService.analyzeEligibility(request.getStudentProfile());
+            String bestChance = branchAnalysis.getOrDefault(prediction, "Low Chances");
+            recommendedCourses = eligibilityService.recommendCourses(prediction, bestChance);
+        }
 
         return QuizDto.SubmitResponse.builder()
                 .attemptId(attempt.getId())
@@ -103,7 +120,9 @@ public class QuizService {
                 .physicsScore(attempt.getPhysicsScore())
                 .logicScore(attempt.getLogicScore())
                 .interestScore(attempt.getInterestScore())
-                .recommendedField(recommendation)
+                .predictedField(prediction)
+                .branchAnalysis(branchAnalysis)
+                .recommendedCourses(recommendedCourses)
                 .build();
     }
 
@@ -196,15 +215,4 @@ public class QuizService {
         return questionRepository.findRandomQuestionByCategoryAndDifficultyExcludingIds(category, difficulty, excludedIds);
     }
 
-    private String determineBaseRecommendation(QuizAttempt attempt) {
-        // Simple heuristic for Phase 2 before AI implementation
-        if (attempt.getMathScore() > attempt.getPhysicsScore() && attempt.getMathScore() > attempt.getLogicScore()) {
-            return "Computer Science or Data Science";
-        } else if (attempt.getPhysicsScore() > attempt.getMathScore()) {
-            return "Mechanical or Civil Engineering";
-        } else if (attempt.getLogicScore() > attempt.getMathScore()) {
-            return "Electronics & Telecommunication";
-        }
-        return "General Engineering (First Year)";
-    }
 }

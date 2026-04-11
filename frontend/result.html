@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Results – MIT-WPU AI Counseling</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .predicted-field {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #004d99;
+            padding: 1rem;
+            border: 2px solid #004d99;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+        .eligibility-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 0.9rem;
+        }
+        .eligibility-row:last-child { border-bottom: none; }
+        .chance-badge {
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: 20px;
+        }
+        .high { background: #d4edda; color: #155724; }
+        .moderate { background: #fff3cd; color: #856404; }
+        .low { background: #f8d7da; color: #721c24; }
+        .score-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin: 10px 0;
+        }
+        .score-card {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+        .score-card span { font-weight: 700; color: #004d99; }
+    </style>
+</head>
+<body>
+<div class="container" style="max-width:600px">
+    <header>
+        <div class="logo">🎓 MIT-WPU</div>
+        <h1>Your Career Analysis</h1>
+    </header>
+
+    <!-- Predicted Field -->
+    <div class="result-section">
+        <h3>🎯 Predicted Engineering Field</h3>
+        <div class="predicted-field" id="predicted-field">–</div>
+    </div>
+
+    <!-- Quiz Scores -->
+    <div class="result-section">
+        <h3>📊 Quiz Scores</h3>
+        <div class="score-grid" id="score-grid"></div>
+    </div>
+
+    <!-- Eligibility Analysis -->
+    <div class="result-section" id="eligibility-section" style="display:none">
+        <h3>🏛️ MIT-WPU Branch Eligibility</h3>
+        <div id="eligibility-list"></div>
+    </div>
+
+    <!-- Recommended Courses -->
+    <div class="result-section" id="courses-section" style="display:none">
+        <h3>📚 Recommended Courses</h3>
+        <ul id="course-list"></ul>
+    </div>
+
+    <!-- Voice Button -->
+    <button class="voice-btn" onclick="speakResult()">🔊 Speak Result</button>
+    <button onclick="restartQuiz()" style="background:#e74c3c;margin-top:10px">🔁 Retake Quiz</button>
+
+    <p class="disclaimer">⚠️ This is a prediction based on past trends and not a final admission decision.</p>
+</div>
+
+<script>
+    const result = JSON.parse(localStorage.getItem('quizResult'));
+
+    if (!result) {
+        document.querySelector('.container').innerHTML = '<p style="padding:2rem;color:#e74c3c">No result found. Please complete the quiz first. <a href="login.html">Start over</a></p>';
+    } else {
+        renderResults(result);
+    }
+
+    function renderResults(r) {
+        // Predicted Field
+        document.getElementById('predicted-field').textContent = r.predictedField || 'Unavailable';
+
+        // Scores
+        const scoreGrid = document.getElementById('score-grid');
+        const scoreMap = [
+            { label: 'Total Score', value: r.score },
+            { label: 'Math', value: r.mathScore },
+            { label: 'Physics', value: r.physicsScore },
+            { label: 'Logic', value: r.logicScore },
+            { label: 'Interest', value: r.interestScore },
+        ];
+        scoreMap.forEach(s => {
+            const card = document.createElement('div');
+            card.className = 'score-card';
+            card.innerHTML = `${s.label}: <span>${s.value ?? '–'}</span>`;
+            scoreGrid.appendChild(card);
+        });
+
+        // Eligibility Analysis
+        if (r.branchAnalysis && Object.keys(r.branchAnalysis).length > 0) {
+            document.getElementById('eligibility-section').style.display = 'block';
+            const list = document.getElementById('eligibility-list');
+            for (const [branch, chance] of Object.entries(r.branchAnalysis)) {
+                const badgeClass = chance.includes('High') ? 'high' : chance.includes('Moderate') ? 'moderate' : 'low';
+                const row = document.createElement('div');
+                row.className = 'eligibility-row';
+                row.innerHTML = `<span>${branch}</span><span class="chance-badge ${badgeClass}">${chance}</span>`;
+                list.appendChild(row);
+            }
+        }
+
+        // Recommended Courses
+        if (r.recommendedCourses && r.recommendedCourses.length > 0) {
+            document.getElementById('courses-section').style.display = 'block';
+            const courseList = document.getElementById('course-list');
+            r.recommendedCourses.forEach(course => {
+                const li = document.createElement('li');
+                li.innerHTML = `<a href="${course.link}" target="_blank">${course.title}</a>
+                    <small> – ${course.platform} (${course.type})</small>`;
+                courseList.appendChild(li);
+            });
+        }
+    }
+
+    function speakResult() {
+        if (!result) return;
+        window.speechSynthesis.cancel();
+
+        let text = `Your recommended engineering field is ${result.predictedField || 'unavailable'}. `;
+
+        if (result.branchAnalysis) {
+            const entries = Object.entries(result.branchAnalysis);
+            const top = entries.filter(([, v]) => v.includes('High'));
+            if (top.length > 0) {
+                text += `You have high chances in: ${top.map(([k]) => k).join(', ')}. `;
+            }
+        }
+
+        if (result.recommendedCourses && result.recommendedCourses.length > 0) {
+            text += `Top recommended course: ${result.recommendedCourses[0].title} on ${result.recommendedCourses[0].platform}.`;
+        }
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'en-IN';
+        utterance.rate = 0.95;
+        window.speechSynthesis.speak(utterance);
+    }
+
+    function restartQuiz() {
+        localStorage.removeItem('quizResult');
+        localStorage.removeItem('currentQuestion');
+        localStorage.removeItem('attemptId');
+        window.location.href = 'student-form.html';
+    }
+</script>
+</body>
+</html>

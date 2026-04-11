@@ -1,0 +1,182 @@
+/* Global Styles */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background-color: #f4f7fa;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    color: #333;
+}
+
+/* Container */
+.container {
+    background-color: #ffffff;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    width: 100%;
+    max-width: 500px;
+    text-align: center;
+}
+
+/* Header & Logos */
+header {
+    margin-bottom: 2rem;
+}
+
+header h1 {
+    font-size: 1.5rem;
+    color: #2c3e50;
+    margin-top: 10px;
+}
+
+.logo {
+    max-width: 150px;
+    height: auto;
+    /* Placeholder fallback */
+    background: #e2e8f0;
+    padding: 10px;
+    border-radius: 8px;
+    display: inline-block;
+}
+
+/* Forms */
+.form-group {
+    margin-bottom: 1.2rem;
+    text-align: left;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #555;
+    font-size: 0.9rem;
+}
+
+.form-group input, .form-group select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.3s;
+}
+
+.form-group input:focus, .form-group select:focus {
+    border-color: #3498db;
+}
+
+/* Buttons */
+button {
+    background-color: #004d99; /* Standard MIT-WPU Blue style */
+    color: white;
+    border: none;
+    padding: 0.8rem 1.5rem;
+    font-size: 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    width: 100%;
+    transition: background-color 0.3s;
+    font-weight: 600;
+    margin-top: 10px;
+}
+
+button:hover {
+    background-color: #003366;
+}
+
+button:disabled {
+    background-color: #a0aec0;
+    cursor: not-allowed;
+}
+
+/* Specific Page Styling */
+.error-msg {
+    color: #e74c3c;
+    font-size: 0.9rem;
+    margin-top: 10px;
+    display: none;
+}
+
+.options-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 1.5rem 0;
+}
+
+.option-btn {
+    background-color: #f8f9fa;
+    color: #333;
+    border: 2px solid #e9ecef;
+    padding: 10px;
+    text-align: left;
+    font-weight: normal;
+    transition: all 0.2s;
+}
+
+.option-btn:hover {
+    background-color: #e9ecef;
+    border-color: #ced4da;
+}
+
+.option-btn.selected {
+    background-color: #004d99;
+    color: white;
+    border-color: #004d99;
+}
+
+.result-section {
+    margin-top: 1.5rem;
+    text-align: left;
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 8px;
+}
+
+.result-section h3 {
+    color: #004d99;
+    margin-bottom: 10px;
+    font-size: 1.1rem;
+    border-bottom: 2px solid #e9ecef;
+    padding-bottom: 5px;
+}
+
+.disclaimer {
+    font-size: 0.8rem;
+    color: #7f8c8d;
+    margin-top: 2rem;
+    font-style: italic;
+}
+
+.voice-btn {
+    background-color: #27ae60;
+    margin-top: 1rem;
+}
+
+.voice-btn:hover {
+    background-color: #2ecc71;
+}
+
+#course-list {
+    list-style-type: disc;
+    margin-left: 20px;
+}
+
+#course-list a {
+    color: #004d99;
+    text-decoration: none;
+}
+
+#course-list a:hover {
+    text-decoration: underline;
+}

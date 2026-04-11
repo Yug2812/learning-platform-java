@@ -1,11 +1,15 @@
 package com.learning.platform.dto;
 
 import com.learning.platform.model.Category;
+import com.learning.platform.model.Course;
 import com.learning.platform.model.Difficulty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.util.List;
+import java.util.Map;
 
 public class QuizDto {
 
@@ -37,6 +41,7 @@ public class QuizDto {
     @Data
     public static class SubmitRequest {
         private Long attemptId;
+        private StudentProfileDto studentProfile;
     }
 
     @Data
@@ -51,6 +56,8 @@ public class QuizDto {
         private int physicsScore;
         private int logicScore;
         private int interestScore;
-        private String recommendedField;
+        private String predictedField;
+        private Map<String, String> branchAnalysis;
+        private List<Course> recommendedCourses;
     }
 }

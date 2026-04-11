@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz – MIT-WPU AI Counseling</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .quiz-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: #7f8c8d;
+            margin-bottom: 1rem;
+        }
+        .question-text {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+            text-align: left;
+        }
+        #progress-bar-wrap {
+            background: #e9ecef;
+            border-radius: 4px;
+            height: 6px;
+            margin-bottom: 1.5rem;
+        }
+        #progress-bar {
+            height: 100%;
+            background: #004d99;
+            border-radius: 4px;
+            transition: width 0.4s ease;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <div class="logo">🎓 MIT-WPU</div>
+        <h1>AI Career Quiz</h1>
+    </header>
+
+    <div id="quiz-area">
+        <div id="progress-bar-wrap"><div id="progress-bar" style="width:0%"></div></div>
+        <div class="quiz-meta">
+            <span id="question-num">Question 1 of 10</span>
+            <span id="category-label">Category: –</span>
+        </div>
+        <div class="question-text" id="question-text">Loading question...</div>
+        <div class="options-container" id="options"></div>
+        <p class="error-msg" id="error-msg">Something went wrong. Please try again.</p>
+    </div>
+
+    <div id="loading-area" style="display:none;">
+        <p style="color:#7f8c8d;margin-top:1rem;">Submitting quiz and fetching results...</p>
+    </div>
+</div>
+
+<script>
+    const API_BASE = 'http://localhost:8080';
+    const token = localStorage.getItem('token');
+    const attemptId = localStorage.getItem('attemptId');
+    const TOTAL_QUESTIONS = 10;
+
+    if (!token || !attemptId) window.location.href = 'login.html';
+
+    let currentQuestion = JSON.parse(localStorage.getItem('currentQuestion'));
+    renderQuestion(currentQuestion);
+
+    function renderQuestion(data) {
+        if (!data) {
+            showError('Failed to load question data.');
+            return;
+        }
+
+        if (data.completed) {
+            submitQuiz();
+            return;
+        }
+
+        const qNum = data.currentQuestionNumber || 1;
+        document.getElementById('question-num').textContent = `Question ${qNum} of ${TOTAL_QUESTIONS}`;
+        document.getElementById('category-label').textContent = `Category: ${data.category || ''}`;
+        document.getElementById('question-text').textContent = data.questionText || '';
+        document.getElementById('progress-bar').style.width = `${(qNum / TOTAL_QUESTIONS) * 100}%`;
+
+        const opts = document.getElementById('options');
+        opts.innerHTML = '';
+
+        const options = [
+            { key: 'A', text: data.optionA },
+            { key: 'B', text: data.optionB },
+            { key: 'C', text: data.optionC },
+            { key: 'D', text: data.optionD }
+        ];
+
+        options.forEach(opt => {
+            if (!opt.text) return;
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.textContent = `${opt.key}. ${opt.text}`;
+            btn.onclick = () => submitAnswer(data.questionId, opt.key);
+            opts.appendChild(btn);
+        });
+    }
+
+    async function submitAnswer(questionId, selectedAnswer) {
+        document.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
+        hideError();
+
+        try {
+            const res = await fetch(`${API_BASE}/api/quiz/answer`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ attemptId: parseInt(attemptId), questionId, selectedAnswer })
+            });
+
+            if (!res.ok) throw new Error('Answer submission failed');
+
+            const data = await res.json();
+
+            if (data.completed) {
+                submitQuiz();
+            } else {
+                renderQuestion(data);
+            }
+        } catch (err) {
+            showError('Failed to submit answer. Please check your connection.');
+            document.querySelectorAll('.option-btn').forEach(b => b.disabled = false);
+        }
+    }
+
+    async function submitQuiz() {
+        document.getElementById('quiz-area').style.display = 'none';
+        document.getElementById('loading-area').style.display = 'block';
+
+        const studentProfile = JSON.parse(localStorage.getItem('studentProfile'));
+
+        try {
+            const res = await fetch(`${API_BASE}/api/quiz/submit`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ attemptId: parseInt(attemptId), studentProfile })
+            });
+
+            if (!res.ok) throw new Error('Quiz submission failed');
+
+            const data = await res.json();
+            localStorage.setItem('quizResult', JSON.stringify(data));
+            window.location.href = 'result.html';
+        } catch (err) {
+            document.getElementById('quiz-area').style.display = 'block';
+            document.getElementById('loading-area').style.display = 'none';
+            showError('Failed to submit quiz. Please try again.');
+        }
+    }
+
+    function showError(msg) {
+        const el = document.getElementById('error-msg');
+        el.textContent = msg;
+        el.style.display = 'block';
+    }
+
+    function hideError() {
+        document.getElementById('error-msg').style.display = 'none';
+    }
+</script>
+</body>
+</html>

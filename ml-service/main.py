@@ -1,43 +1,54 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 import joblib
+import pandas as pd
 import os
 
-app = FastAPI(title="AI Career Prediction Service")
+app = FastAPI(title="Career Prediction Service")
 
-# Locate and specify the model early
 MODEL_PATH = "model.joblib"
-model = None
 
-# We use lifecycle startup event to load model safely
-@app.on_event("startup")
-def load_model():
-    global model
+# Load the model if it exists
+try:
     if os.path.exists(MODEL_PATH):
         model = joblib.load(MODEL_PATH)
-        print("Model loaded successfully.")
     else:
-        print(f"Warning: Model file not found at {MODEL_PATH}. Make sure to run train_model.py first.")
+        model = None
+except Exception as e:
+    model = None
+    print(f"Error loading model: {e}")
 
-# Define strictly verified boundary metrics for Score input
 class PredictionInput(BaseModel):
-    math_score: int = Field(..., ge=0, le=100, description="Math score must be between 0 and 100")
-    physics_score: int = Field(..., ge=0, le=100, description="Physics score must be between 0 and 100")
-    logic_score: int = Field(..., ge=0, le=100, description="Logic score must be between 0 and 100")
-    interest_score: int = Field(..., ge=0, le=100, description="Interest score must be between 0 and 100")
+    math_score: int = Field(..., ge=0, le=100, description="Math score between 0 and 100")
+    physics_score: int = Field(..., ge=0, le=100, description="Physics score between 0 and 100")
+    logic_score: int = Field(..., ge=0, le=100, description="Logic score between 0 and 100")
+    interest_score: int = Field(..., ge=0, le=100, description="Interest score between 0 and 100")
 
 class PredictionOutput(BaseModel):
     predicted_field: str
 
 @app.post("/predict", response_model=PredictionOutput)
-def predict_career(data: PredictionInput):
+def predict_career(input_data: PredictionInput):
+    # Try to reload if it wasn't available at startup but might be now
+    global model
     if model is None:
-        raise HTTPException(status_code=503, detail="Model is not loaded or currently unavailable.")
-    
+        if os.path.exists(MODEL_PATH):
+            model = joblib.load(MODEL_PATH)
+        else:
+            raise HTTPException(status_code=500, detail="Model file not found. Please run train_model.py first.")
+
     try:
-        features = [[data.math_score, data.physics_score, data.logic_score, data.interest_score]]
-        prediction = model.predict(features)[0]
+        # Create a dataframe for the input data since scikit-learn expects feature names
+        input_df = pd.DataFrame([{
+            "math_score": input_data.math_score,
+            "physics_score": input_data.physics_score,
+            "logic_score": input_data.logic_score,
+            "interest_score": input_data.interest_score
+        }])
         
-        return {"predicted_field": prediction}
+        # Predict using the loaded model
+        prediction = model.predict(input_df)
+        
+        return {"predicted_field": prediction[0]}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=400, detail=f"Prediction error: {str(e)}")

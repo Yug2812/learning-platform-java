@@ -36,6 +36,6 @@ public class QuizController {
             Authentication authentication) {
         
         String userEmail = authentication.getName();
-        return ResponseEntity.ok(quizService.submitQuiz(submitRequest.getAttemptId(), userEmail));
+        return ResponseEntity.ok(quizService.submitQuiz(submitRequest, userEmail));
     }
 }
