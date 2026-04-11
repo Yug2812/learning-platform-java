@@ -1,0 +1,20 @@
+# Mac
+.DS_Store
+
+# IDE
+.vscode/
+
+# Java build
+target/
+*.class
+
+# Maven
+backend/.jdk/
+backend/wrapper.zip
+
+# Node (future safety)
+node_modules/
+
+# Python
+ml-service/.venv/
+ml-service/__pycache__/
